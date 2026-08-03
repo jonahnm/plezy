@@ -11,6 +11,10 @@ on:
         description: Build iOS
         default: true
         type: boolean
+      build_tvos:
+        description: Build tvOS
+        default: true
+        type: boolean
       build_macos:
         description: Build macOS
         default: true
@@ -213,6 +217,92 @@ jobs:
         with:
           name: ios-ipa
           path: plezy-ios.ipa
+
+  build-tvos:
+    needs: validate-trusted-ref
+    if: ${{ inputs.build_tvos }}
+    runs-on: macos-26
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: "stable"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-key: "${{ env.TRUSTED_BUILD_CACHE_VERSION }}-flutter-:os:-:channel:-:version:-:arch:-:hash:"
+          pub-cache: false
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ env.TRUSTED_BUILD_CACHE_VERSION }}-${{ runner.os }}-${{ runner.arch }}-pub-${{ hashFiles('pubspec.yaml', 'pubspec.lock') }}
+
+      - name: Cache tvOS engine
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.cache/flutter-tvos-engine
+          key: ${{ env.TRUSTED_BUILD_CACHE_VERSION }}-${{ runner.os }}-tvos-engine-${{ hashFiles('tvos/engine.version', 'tvos/engine.sha256') }}
+
+      - name: Cache CocoaPods
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            tvos/Pods
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+          key: ${{ env.TRUSTED_BUILD_CACHE_VERSION }}-${{ runner.os }}-tvos-pods-${{ hashFiles('tvos/Podfile') }}
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile --no-example
+
+      - name: Fetch tvOS Flutter engine
+        run: tvos/scripts/fetch_engine.sh
+
+      - name: Install tvOS CocoaPods dependencies
+        run: tvos/scripts/pod_install.sh
+
+      - name: Verify tvOS project wiring
+        run: ruby tvos/scripts/test_wire_mpv.rb
+
+      - name: Build tvOS (no codesign)
+        run: |
+          xcodebuild build \
+            -workspace tvos/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk appletvos \
+            -derivedDataPath build/tvos \
+            -disableAutomaticPackageResolution \
+            CODE_SIGNING_ALLOWED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO
+
+      - name: Create IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/tvos/Build/Products/Release-appletvos/Runner.app Payload/
+          zip -r plezy-tvos.ipa Payload
+
+      - name: Attest IPA
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4
+        with:
+          subject-path: plezy-tvos.ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: tvos-ipa
+          path: plezy-tvos.ipa
 
   build-macos:
     needs: validate-trusted-ref
@@ -827,8 +917,8 @@ jobs:
             plezy-linux-${{ matrix.arch }}.pkg.tar.zst
 
   create-release:
-    needs: [validate-trusted-ref, build-android, build-ios, build-macos, build-windows, package-windows, build-linux]
-    if: ${{ always() && needs.validate-trusted-ref.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.build_android && inputs.build_ios && inputs.build_macos && inputs.build_windows && inputs.build_linux }}
+    needs: [validate-trusted-ref, build-android, build-ios, build-tvos, build-macos, build-windows, package-windows, build-linux]
+    if: ${{ always() && needs.validate-trusted-ref.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.build_android && inputs.build_ios && inputs.build_tvos && inputs.build_macos && inputs.build_windows && inputs.build_linux }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -860,6 +950,13 @@ jobs:
         with:
           name: ios-ipa
           path: artifacts/ios-ipa
+
+      - name: Download tvOS artifact
+        if: ${{ inputs.build_tvos }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: tvos-ipa
+          path: artifacts/tvos-ipa
 
       - name: Download macOS artifact
         if: ${{ inputs.build_macos }}
@@ -988,6 +1085,9 @@ jobs:
             fi
             if [ "${{ inputs.build_ios }}" = "true" ]; then
               echo artifacts/ios-ipa/plezy-ios.ipa
+            fi
+            if [ "${{ inputs.build_tvos }}" = "true" ]; then
+              echo artifacts/tvos-ipa/plezy-tvos.ipa
             fi
             if [ "${{ inputs.build_macos }}" = "true" ]; then
               echo artifacts/macos-dmg/plezy-macos.dmg
