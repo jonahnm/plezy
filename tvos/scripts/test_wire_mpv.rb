@@ -25,9 +25,9 @@ class WireMpvTest < Minitest::Test
     AtmosProbePlugin.swift
   ].freeze
   MPVKIT_PIN = {
-    'location' => 'https://github.com/edde746/MPVKit',
-    'revision' => '39df1216941c1442e9163d2a574ca37ef2c2b4ff',
-    'version' => '1.0.16',
+    'location' => 'https://github.com/jonahnm/MPVKit',
+    'revision' => '633539992e920b53d2b86ca1ddee96757cce559b',
+    'version' => '1.0.17',
   }.freeze
 
   def setup
