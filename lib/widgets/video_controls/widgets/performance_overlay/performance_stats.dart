@@ -66,6 +66,9 @@ class PerformanceStats {
   final String? dvPlaybackPath;
   final String? dvPlaybackReason;
 
+  // LCEVC (MPEG-5 part 2) enhancement
+  final bool lcevcEnhancementActive;
+
   // App metrics
   final int? appMemoryBytes;
   final double? uiFps;
@@ -116,6 +119,7 @@ class PerformanceStats {
     this.dvSourceProfile,
     this.dvPlaybackPath,
     this.dvPlaybackReason,
+    this.lcevcEnhancementActive = false,
     this.appMemoryBytes,
     this.uiFps,
   });
@@ -167,6 +171,7 @@ class PerformanceStats {
       dvSourceProfile = null,
       dvPlaybackPath = null,
       dvPlaybackReason = null,
+      lcevcEnhancementActive = false,
       appMemoryBytes = null,
       uiFps = null;
 
@@ -294,6 +299,9 @@ class PerformanceStats {
 
   /// Format Dolby Vision source profile.
   String get dvSourceProfileFormatted => dvSourceProfile == null ? 'N/A' : 'P$dvSourceProfile';
+
+  /// Format LCEVC enhancement status for display.
+  String get lcevcStatusFormatted => lcevcEnhancementActive ? 'Active' : 'Off';
 
   /// Format Dolby Vision playback path.
   String get dvPlaybackPathFormatted => dvPlaybackPath ?? 'N/A';

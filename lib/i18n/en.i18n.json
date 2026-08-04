@@ -1644,6 +1644,7 @@
     "dvSource": "DV Source",
     "dvPath": "DV Path",
     "p7Conversion": "P7 Conv",
+    "lcevc": "LCEVC",
     "sampleRate": "Sample Rate",
     "pixelFormat": "Pixel Fmt",
     "hwFormat": "HW Fmt",

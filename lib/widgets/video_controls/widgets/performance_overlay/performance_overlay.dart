@@ -65,6 +65,7 @@ class _PlayerPerformanceOverlayState extends State<PlayerPerformanceOverlay> {
         if (_stats.dvSourceProfile != null) _metric(t.performanceOverlay.dvSource, _stats.dvSourceProfileFormatted),
         if (_stats.dvPlaybackPath != null) _metric(t.performanceOverlay.dvPath, _stats.dvPlaybackPathFormatted),
         if (_stats.dvConversionActive) _metric(t.performanceOverlay.p7Conversion, _stats.dvConversionFormatted),
+        if (isMpv) _metric(t.performanceOverlay.lcevc, _stats.lcevcStatusFormatted),
       ]),
       _buildSection(Symbols.volume_up_rounded, t.fileInfo.audio, [
         if (_stats.audioCodec != null) _metric(t.fileInfo.codec, _stats.audioCodec!),

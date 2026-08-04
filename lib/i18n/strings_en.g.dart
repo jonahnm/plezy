@@ -4136,6 +4136,9 @@ class Translations$performanceOverlay$en {
 	/// en: 'P7 Conv'
 	String get p7Conversion => 'P7 Conv';
 
+	/// en: 'LCEVC'
+	String get lcevc => 'LCEVC';
+
 	/// en: 'Sample Rate'
 	String get sampleRate => 'Sample Rate';
 
@@ -7537,6 +7540,7 @@ extension on Translations {
 			'performanceOverlay.dvSource' => 'DV Source',
 			'performanceOverlay.dvPath' => 'DV Path',
 			'performanceOverlay.p7Conversion' => 'P7 Conv',
+			'performanceOverlay.lcevc' => 'LCEVC',
 			'performanceOverlay.sampleRate' => 'Sample Rate',
 			'performanceOverlay.pixelFormat' => 'Pixel Fmt',
 			'performanceOverlay.hwFormat' => 'HW Fmt',

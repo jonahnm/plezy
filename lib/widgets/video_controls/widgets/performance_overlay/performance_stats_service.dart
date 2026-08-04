@@ -252,6 +252,7 @@ class PerformanceStatsService {
       player.getProperty('frame-drop-count'), // 15
       player.getProperty('decoder-frame-drop-count'), // 16
       player.getProperty('demuxer-cache-duration'), // 17
+      player.getProperty('vf'), // 18
     ]);
 
     final hasVideo = results[1] != null;
@@ -307,6 +308,9 @@ class PerformanceStatsService {
       frameDropCount: _parseInt(results[15]),
       decoderFrameDropCount: _parseInt(results[16]),
       cacheDuration: _parseDouble(results[17]),
+      // LCEVC enhancement: the lcevc filter is appended to the video chain
+      // when the file carries a separate-track LCEVC enhancement stream.
+      lcevcEnhancementActive: (results[18] ?? '').contains('lavfi=lcevc'),
       // Video-dependent properties
       displayFps: _parseDouble(videoResults?.first),
       pixelformat: videoResults?[1],
