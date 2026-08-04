@@ -50,7 +50,7 @@ end
 # Swift Package: MPVKit. Restore each graph edge independently so a project
 # with a surviving package reference cannot silently omit the Runner linkage.
 pkg_url = 'https://github.com/jonahnm/MPVKit'
-pkg_version = '1.0.18'
+pkg_version = '1.0.19'
 pkg = project.root_object.package_references.find do |candidate|
   candidate.repositoryURL == pkg_url rescue false
 end
