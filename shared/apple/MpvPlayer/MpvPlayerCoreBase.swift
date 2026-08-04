@@ -1119,6 +1119,7 @@ class MpvPlayerCoreBase: NSObject {
       dispatchDelegateEvent(name: "start-file", data: nil)
 
     case MPV_EVENT_FILE_LOADED:
+      enableLcevcEnhancementIfPresent()
       dispatchDelegateEvent(name: "file-loaded", data: nil)
 
     case MPV_EVENT_END_FILE:
@@ -1339,6 +1340,26 @@ class MpvPlayerCoreBase: NSObject {
   func convertNode(_ node: mpv_node) -> Any? {
     var budget = NodeConversionBudget()
     return convertNode(node, depth: 0, budget: &budget)
+  }
+
+  /// If the file carries a separate-track LCEVC (MPEG-5 part 2) enhancement
+  /// stream, append the ffmpeg `lcevc` filter to the video chain so the
+  /// enhancement layer gets applied. The demuxer merges the enhancement
+  /// packets into the base stream as AV_PKT_DATA_LCEVC side data; without
+  /// that side data the filter passes frames through unchanged.
+  private func enableLcevcEnhancementIfPresent() {
+    guard let mpv = withActiveMpv({ $0 }) else { return }
+    var node = mpv_node()
+    guard mpv_get_property(mpv, "track-list", MPV_FORMAT_NODE, &node) >= 0 else { return }
+    defer { mpv_free_node_contents(&node) }
+    guard let tracks = convertNode(node) as? [[String: Any]] else { return }
+    let hasLcevc = tracks.contains { track in
+      guard let type = track["type"] as? String, type == "video" else { return false }
+      return (track["codec"] as? String) == "lcevc"
+    }
+    guard hasLcevc else { return }
+    print("[MpvPlayerCore] LCEVC enhancement track detected; enabling lavfi=lcevc filter")
+    command(["vf", "append", "lavfi=lcevc"])
   }
 
   func validateSideDataDimensions(width: Int64, height: Int64) -> Bool {
