@@ -310,7 +310,8 @@ class PerformanceStatsService {
       cacheDuration: _parseDouble(results[17]),
       // LCEVC enhancement: the lcevc filter is appended to the video chain
       // when the file carries a separate-track LCEVC enhancement stream.
-      lcevcEnhancementActive: (results[18] ?? '').contains('lavfi=lcevc'),
+      // mpv renders the filter as "lavfi [graph=lcevc]" in the vf property.
+      lcevcEnhancementActive: (results[18] ?? '').contains('graph=lcevc'),
       // Video-dependent properties
       displayFps: _parseDouble(videoResults?.first),
       pixelformat: videoResults?[1],
