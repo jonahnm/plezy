@@ -26,8 +26,8 @@ class WireMpvTest < Minitest::Test
   ].freeze
   MPVKIT_PIN = {
     'location' => 'https://github.com/jonahnm/MPVKit',
-    'revision' => 'debd509ed9b62200a3c1197dc3b4e628aeeeddcd',
-    'version' => '1.0.24',
+    'revision' => '8eb57303e611d5ebc49c86b7d76b33b69af72b45',
+    'version' => '1.0.25',
   }.freeze
 
   def setup
