@@ -645,6 +645,10 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/../build/macos/SourcePackages/artifacts/mpvkit/Libavcodec/Libavcodec.xcframework/macos-arm64_x86_64/Libavcodec.framework",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-weak_framework",
@@ -787,6 +791,10 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/../build/macos/SourcePackages/artifacts/mpvkit/Libavcodec/Libavcodec.xcframework/macos-arm64_x86_64/Libavcodec.framework",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-weak_framework",
@@ -816,6 +824,10 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/../build/macos/SourcePackages/artifacts/mpvkit/Libavcodec/Libavcodec.xcframework/macos-arm64_x86_64/Libavcodec.framework",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
