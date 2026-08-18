@@ -907,7 +907,7 @@
 			repositoryURL = "https://github.com/jonahnm/MPVKit";
 			requirement = {
 				kind = exactVersion;
-				version = 1.0.34;
+				version = 1.0.36;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
