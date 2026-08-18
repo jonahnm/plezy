@@ -219,6 +219,7 @@ class MpvPlayerCoreBase: NSObject {
   private var cachedHeight = 0.0
   private var currentPanscan = 0.0
   private var aspectOverrideActive = false
+  private var lcevcFilterInstalled = false
 
   override init() {
     super.init()
@@ -825,6 +826,7 @@ class MpvPlayerCoreBase: NSObject {
     cachedVideoGamma = nil
     cachedVideoPrimaries = nil
     cachedVideoColorMatrix = nil
+    lcevcFilterInstalled = false
     serverDisplayCriteriaActive = false
     cacheLock.unlock()
 
@@ -1342,24 +1344,63 @@ class MpvPlayerCoreBase: NSObject {
     return convertNode(node, depth: 0, budget: &budget)
   }
 
-  /// If the file carries a separate-track LCEVC (MPEG-5 part 2) enhancement
-  /// stream, append the ffmpeg `lcevc` filter to the video chain so the
-  /// enhancement layer gets applied. The demuxer merges the enhancement
-  /// packets into the base stream as AV_PKT_DATA_LCEVC side data; without
-  /// that side data the filter passes frames through unchanged.
+  /// Enables the ffmpeg `lcevc` (MPEG-5 part 2) enhancement pipeline whenever
+  /// the current file can carry LCEVC data, either as:
+  ///
+  ///  - a dedicated `lcevc` video track, merged into the base stream as
+  ///    `AV_PKT_DATA_LCEVC` side data by the demuxer, or
+  ///  - enhancement data embedded in an AV1 base stream (ITU-T T.35 metadata
+  ///    OBUs) that FFmpeg's native `av1` decoder forwards as
+  ///    `AV_FRAME_DATA_LCEVC` frame side data.
+  ///
+  /// The filter is a pure passthrough when no LCEVC side data is present, so
+  /// enabling it for plain AV1 is harmless. It is only compiled into FFmpeg
+  /// builds made with `--enable-liblcevc-dec` (the V-Nova SDK); if the bundle
+  /// lacks it the append fails and we log instead of breaking the video chain.
+  ///
+  /// Embedded-AV1 side data only materialises when AV1 is decoded by the
+  /// native software decoder — hardware decoding strips the metadata OBUs — so
+  /// the Dart layer pins `vd=av1` and drops `av1` from `hwdec-codecs` for AV1
+  /// items as per-file (`loadfile`) options, which roll back automatically when
+  /// the entry unloads.
   private func enableLcevcEnhancementIfPresent() {
     guard let mpv = withActiveMpv({ $0 }) else { return }
+
     var node = mpv_node()
     guard mpv_get_property(mpv, "track-list", MPV_FORMAT_NODE, &node) >= 0 else { return }
     defer { mpv_free_node_contents(&node) }
     guard let tracks = convertNode(node) as? [[String: Any]] else { return }
-    let hasLcevc = tracks.contains { track in
-      guard let type = track["type"] as? String, type == "video" else { return false }
-      return (track["codec"] as? String) == "lcevc"
+    let videoTracks = tracks.filter { ($0["type"] as? String) == "video" }
+    let selectedCodec =
+      videoTracks.first { ($0["selected"] as? Int) == 1 }?["codec"] as? String
+      ?? videoTracks.first?["codec"] as? String
+      ?? ""
+    let hasSeparateLcevcTrack = videoTracks.contains { ($0["codec"] as? String) == "lcevc" }
+    let isAv1 = selectedCodec == "av1" || selectedCodec == "av01"
+
+    cacheLock.lock()
+    let alreadyInstalled = lcevcFilterInstalled
+    cacheLock.unlock()
+    guard !alreadyInstalled, hasSeparateLcevcTrack || isAv1 else { return }
+
+    commandAsync(["vf", "append", "lavfi=lcevc"]) { [weak self] result in
+      guard let self else { return }
+      switch result {
+      case .success:
+        self.cacheLock.lock()
+        self.lcevcFilterInstalled = true
+        self.cacheLock.unlock()
+        print(
+          "[MpvPlayerCore] LCEVC pipeline enabled"
+            + (hasSeparateLcevcTrack ? " (separate lcevc track)" : " (embedded in \(selectedCodec))")
+        )
+      case .failure(let error):
+        print(
+          "[MpvPlayerCore] LCEVC enhancement requested but the lcevc filter is unavailable "
+            + "in this build (\(error)); FFmpeg must be built with --enable-liblcevc-dec"
+        )
+      }
     }
-    guard hasLcevc else { return }
-    print("[MpvPlayerCore] LCEVC enhancement track detected; enabling lavfi=lcevc filter")
-    command(["vf", "append", "lavfi=lcevc"])
   }
 
   func validateSideDataDimensions(width: Int64, height: Int64) -> Bool {

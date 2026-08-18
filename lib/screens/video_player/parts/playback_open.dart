@@ -608,6 +608,7 @@ extension _VideoPlayerOpenMethods on VideoPlayerScreenState {
     if (shouldContinue != null && !shouldContinue()) return const _MediaOpenResult(didOpen: false);
 
     final media = Media(videoUrl, start: timing.mediaStart, headers: headers);
+    final forceSoftwareAv1Decode = !isTranscoding && CodecUtils.isAv1VideoCodec(selectedVersion?.videoCodec);
     final sidecarOpenGuard = MpvSidecarOpenGuard.armIfNeeded(player: player, subtitles: externalSubtitlesAtOpen);
     Future<void> openMedia({required bool shouldPlay, List<SubtitleTrack>? externalSubtitles}) {
       onOpening?.call();
@@ -616,6 +617,7 @@ extension _VideoPlayerOpenMethods on VideoPlayerScreenState {
         play: shouldPlay,
         externalSubtitles: externalSubtitles,
         timelineDuration: timing.timelineDuration,
+        forceSoftwareAv1Decode: forceSoftwareAv1Decode,
       );
     }
 

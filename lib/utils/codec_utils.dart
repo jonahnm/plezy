@@ -82,6 +82,18 @@ class CodecUtils {
     };
   }
 
+  /// Whether a video codec name is AV1 in any casing ('av1', 'av01').
+  ///
+  /// AV1 can carry LCEVC (MPEG-5 Part 2) enhancement data embedded in its
+  /// ITU-T T.35 metadata OBUs, which requires the native software decoder.
+  static bool isAv1VideoCodec(String? codec) {
+    if (codec == null) return false;
+    return switch (codec.trim().toLowerCase()) {
+      'av1' || 'av01' => true,
+      _ => false,
+    };
+  }
+
   /// Formats a video codec name to a user-friendly display format.
   ///
   /// Converts internal codec names like 'hevc' to friendly names like 'HEVC'.

@@ -105,6 +105,7 @@ class _FakePlayer with PlayerStreamControllersMixin implements Player {
     bool isLive = false,
     List<SubtitleTrack>? externalSubtitles,
     Duration? timelineDuration,
+    bool forceSoftwareAv1Decode = false,
   }) async {
     openedMedia.add(media);
   }

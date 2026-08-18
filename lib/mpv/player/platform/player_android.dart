@@ -167,6 +167,7 @@ class PlayerAndroid extends PlayerBase {
     bool isLive = false,
     List<SubtitleTrack>? externalSubtitles,
     Duration? timelineDuration,
+    bool forceSoftwareAv1Decode = false,
   }) async {
     if (disposed) return;
     await _ensureInitialized();

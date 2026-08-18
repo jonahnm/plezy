@@ -133,6 +133,21 @@ class PlayerNative extends PlayerBase {
     return 'sub-files=${_fixedLengthQuote(escapedUris.join(separator))}';
   }
 
+  /// mpv's default `hwdec-codecs` list (vd_lavc.c) minus `av1`. Pins AV1 to a
+  /// software decoder so embedded LCEVC (MPEG-5 Part 2) metadata in AV1
+  /// ITU-T T.35 OBUs survives as frame side data for the `lcevc` filter.
+  static const String _hwdecCodecsWithoutAv1 =
+      'h264,vc1,hevc,vp8,vp9,prores,prores_raw,ffv1,dpx,apv';
+
+  /// Per-entry options for an AV1 item that force FFmpeg's native `av1`
+  /// software decoder (`vd` picks the decoder family; `hwdec-codecs` stops
+  /// videotoolbox from claiming AV1 regardless of the `hwdec` setting). Scoped
+  /// to the entry like every `loadfile` option, so later non-AV1 items keep
+  /// hardware decoding without native-side bookkeeping.
+  static String _softwareAv1DecodeLoadfileOption() {
+    return 'vd=av1,hwdec-codecs=${_fixedLengthQuote(_hwdecCodecsWithoutAv1)}';
+  }
+
   /// Per-entry `http-header-fields` options for a `loadfile ... append`
   /// options arg. Every header rides its own `-append` entry because mpv's
   /// string-LIST parser splits a plain `http-header-fields=a,b` value on
@@ -311,6 +326,7 @@ class PlayerNative extends PlayerBase {
     bool isLive = false,
     List<SubtitleTrack>? externalSubtitles,
     Duration? timelineDuration,
+    bool forceSoftwareAv1Decode = false,
   }) async {
     if (_nativeCoreUnavailable) return;
     await _ensureInitialized();
@@ -364,9 +380,14 @@ class PlayerNative extends PlayerBase {
     final (uri, _) = await _toPlayableUri(media.uri);
 
     final loadfileArgs = ['loadfile', uri, 'replace'];
-    final loadfileOption = _externalSubtitlesLoadfileOption(externalSubtitles);
-    if (loadfileOption != null) {
-      loadfileArgs.addAll(['-1', loadfileOption]);
+    final av1DecodeOption = forceSoftwareAv1Decode ? _softwareAv1DecodeLoadfileOption() : null;
+    final subtitleOption = _externalSubtitlesLoadfileOption(externalSubtitles);
+    final loadfileOptions = [
+      if (av1DecodeOption != null) av1DecodeOption,
+      if (subtitleOption != null) subtitleOption,
+    ];
+    if (loadfileOptions.isNotEmpty) {
+      loadfileArgs.addAll(['-1', loadfileOptions.join(',')]);
     }
     if (audioOnly) _expectOpenFileLoad = true;
     await command(loadfileArgs);

@@ -204,6 +204,7 @@ class FakePlayer implements Player {
     bool isLive = false,
     List<SubtitleTrack>? externalSubtitles,
     Duration? timelineDuration,
+    bool forceSoftwareAv1Decode = false,
   }) async {
     final gate = _openGates.isEmpty ? null : _openGates.removeAt(0);
     if (gate != null) await gate.block();

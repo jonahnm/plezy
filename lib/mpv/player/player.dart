@@ -74,12 +74,18 @@ abstract class Player {
   ///
   /// [media] - The media source to open.
   /// [play] - Whether to start playback immediately (default: true).
+  /// [forceSoftwareAv1Decode] - When true, decode AV1 with FFmpeg's native
+  /// software `av1` decoder for the lifetime of this entry (`vd=av1`, with
+  /// `av1` dropped from `hwdec-codecs`). Required to surface embedded LCEVC
+  /// (MPEG-5 Part 2) enhancement metadata, which hardware decoders strip;
+  /// only meaningful on mpv backends. Defaults to false.
   Future<void> open(
     Media media, {
     bool play = true,
     bool isLive = false,
     List<SubtitleTrack>? externalSubtitles,
     Duration? timelineDuration,
+    bool forceSoftwareAv1Decode = false,
   });
 
   /// Start or resume playback.
